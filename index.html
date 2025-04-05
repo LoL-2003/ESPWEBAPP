@@ -83,7 +83,7 @@
 </html>
  -->
 
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -141,6 +141,186 @@
       console.log(`📩 Received on ${topic}: ${msg}`);
       if (topic === statusTopic && msg === 'ONLINE') {
         document.getElementById('status').innerText = 'Device Online';
+      }
+    });
+
+    client.on('error', (err) => {
+      console.error('❌ Connection error:', err);
+      document.getElementById('status').innerText = 'Connection Error';
+    });
+
+    client.on('offline', () => {
+      console.warn('⚠️ Offline');
+      document.getElementById('status').innerText = 'Disconnected';
+    });
+
+    client.on('reconnect', () => {
+      console.log('🔄 Reconnecting...');
+    });
+
+    function sendCommand(command) {
+      if (client.connected) {
+        client.publish(controlTopic, command);
+        console.log(`🚀 Sent command: ${command}`);
+        document.getElementById('status').innerText = 'Command Sent';
+        setTimeout(() => {
+          document.getElementById('status').innerText = 'Device Online';
+        }, 1000);
+      } else {
+        alert('MQTT not connected!');
+      }
+    }
+  </script>
+</body>
+</html>
+ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ESP32 Control Panel</title>
+  <link rel="icon" href="https://static.thenounproject.com/png/1273644-200.png" type="image/x-icon"/>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --text-color: #ffffff;
+      --accent-color: #00ffb7;
+      --error-color: #ff4d4d;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      color: var(--accent-color);
+      text-shadow: 0 0 8px var(--accent-color);
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      font-size: 16px;
+      background-color: var(--accent-color);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #00c792;
+      box-shadow: 0 0 10px var(--accent-color);
+    }
+
+    #status {
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+
+    .sensor-box {
+      margin-top: 40px;
+      padding: 20px;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 255, 183, 0.2);
+      display: inline-block;
+      min-width: 250px;
+    }
+
+    .sensor-box h2 {
+      color: var(--accent-color);
+      margin-bottom: 15px;
+      text-shadow: 0 0 6px var(--accent-color);
+    }
+
+    .sensor-box span {
+      display: block;
+      font-size: 18px;
+      margin: 10px 0;
+      color: #ccc;
+    }
+
+    .sensor-box strong {
+      color: var(--text-color);
+      font-size: 20px;
+      text-shadow: 0 0 6px var(--accent-color);
+    }
+
+    @media (max-width: 500px) {
+      button {
+        width: 80%;
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>ESP32 Control Panel</h1>
+  <button onclick="sendCommand('ON')">Turn ON</button>
+  <button onclick="sendCommand('OFF')">Turn OFF</button>
+  <p>Status: <span id="status">Connecting...</span></p>
+
+  <div class="sensor-box">
+    <h2>Live Sensor Data</h2>
+    <span>X: <strong id="xValue">-</strong></span>
+    <span>Y: <strong id="yValue">-</strong></span>
+    <span>Speed: <strong id="speedValue">-</strong></span>
+    <span>Distance: <strong id="distanceValue">-</strong></span>
+  </div>
+
+  <script>
+    const options = {
+      username: 'HUMAN_TRACKING',
+      password: '12345678aA',
+      protocol: 'wss',
+      port: 8884,
+      clean: true,
+      reconnectPeriod: 1000
+    };
+
+    const client = mqtt.connect('wss://b1040f453c014b0fb5eeebc408edf63d.s1.eu.hivemq.cloud:8884/mqtt', options);
+
+    const controlTopic = 'esp32/control';
+    const statusTopic = 'esp32/status';
+    const sensorTopic = 'esp32/sensor';
+
+    client.on('connect', () => {
+      console.log('✅ Connected to MQTT broker');
+      document.getElementById('status').innerText = 'Connected';
+      client.subscribe([statusTopic, sensorTopic], (err) => {
+        if (err) console.error('Subscription error:', err);
+      });
+    });
+
+    client.on('message', (topic, message) => {
+      const msg = message.toString();
+      console.log(`📩 Received on ${topic}: ${msg}`);
+
+      if (topic === statusTopic && msg === 'ONLINE') {
+        document.getElementById('status').innerText = 'Device Online';
+      }
+
+      if (topic === sensorTopic) {
+        try {
+          const data = JSON.parse(msg);
+          document.getElementById('xValue').innerText = data.x;
+          document.getElementById('yValue').innerText = data.y;
+          document.getElementById('speedValue').innerText = data.speed;
+          document.getElementById('distanceValue').innerText = data.distance;
+        } catch (e) {
+          console.error("❌ Invalid sensor data", e);
+        }
       }
     });
 
