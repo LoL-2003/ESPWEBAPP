@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Control</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>ESP32 Control Panel</h1>
+    <button onclick="sendCommand('ON')">Turn ON</button>
+    <button onclick="sendCommand('OFF')">Turn OFF</button>
+    <p>Status: <span id="status">Disconnected</span></p>
+
+    <script>
+        // MQTT Client Setup
+        const client = mqtt.connect('ws://test.mosquitto.org:8080/mqtt'); // WebSocket connection
+        const topic = 'esp32/control';
+
+        client.on('connect', () => {
+            document.getElementById('status').innerText = 'Connected';
+            console.log('Connected to MQTT broker');
+        });
+
+        client.on('error', (err) => {
+            console.error('Connection error: ', err);
+            document.getElementById('status').innerText = 'Error';
+        });
+
+        // Function to send commands
+        function sendCommand(command) {
+            if (client.connected) {
+                client.publish(topic, command);
+                console.log(`Sent: ${command}`);
+            } else {
+                alert('Not connected to the broker!');
+            }
+        }
+    </script>
+</body>
+</html>
