@@ -314,10 +314,11 @@
       if (topic === sensorTopic) {
         try {
           const data = JSON.parse(msg);
-          document.getElementById('xValue').innerText = data.x;
-          document.getElementById('yValue').innerText = data.y;
-          document.getElementById('speedValue').innerText = data.speed;
-          document.getElementById('distanceValue').innerText = data.distance;
+          // Optional chaining and default fallback if values are missing
+          document.getElementById('xValue').innerText = data.x ?? '-';
+          document.getElementById('yValue').innerText = data.y ?? '-';
+          document.getElementById('speedValue').innerText = data.speed ?? '-';
+          document.getElementById('distanceValue').innerText = data.distance ?? '-';
         } catch (e) {
           console.error("❌ Invalid sensor data", e);
         }
