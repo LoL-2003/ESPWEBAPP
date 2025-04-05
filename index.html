@@ -86,83 +86,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Control Panel</title>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Control Panel</title>
+  <link rel="icon" href="https://static.thenounproject.com/png/1273644-200.png" type="image/x-icon">
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <h1>ESP32 Control Panel</h1>
-    <button onclick="sendCommand('ON')">Turn ON</button>
-    <button onclick="sendCommand('OFF')">Turn OFF</button>
-    <p>Status: <span id="status">Connecting...</span></p>
+  <h1>ESP32 Control Panel</h1>
+  <button onclick="sendCommand('ON')">Turn ON</button>
+  <button onclick="sendCommand('OFF')">Turn OFF</button>
+  <p>Status: <span id="status">Connecting...</span></p>
 
-    <script>
-        // MQTT connection options with credentials
-        const options = {
-            username: 'HUMAN_TRACKING', // Replace with your actual HiveMQ username
-            password: '12345678aA',     // Replace with your actual HiveMQ password
-            protocol: 'wss',           // Explicitly set to WebSocket Secure
-            port: 8884                 // Explicitly set the WebSocket port
-        };
+  <script>
+    // MQTT connection options
+    const options = {
+      username: 'HUMAN_TRACKING',   // your HiveMQ username
+      password: '12345678aA',       // your HiveMQ password
+      protocol: 'wss',              // secure WebSocket
+      port: 8884,                   // WebSocket port
+      clean: true,
+      reconnectPeriod: 1000
+    };
 
-        // Correct WebSocket URL
-        const client = mqtt.connect('b1040f453c014b0fb5eeebc408edf63d.s1.eu.hivemq.cloud', options); // Base URL with options handling path
-        const controlTopic = 'esp32/control';
-        const statusTopic = 'esp32/status';
+    // Connect using full WebSocket URL with /mqtt path
+    const client = mqtt.connect('wss://b1040f453c014b0fb5eeebc408edf63d.s1.eu.hivemq.cloud:8884/mqtt', options);
 
-        client.on('connect', () => {
-            console.log('Connected to MQTT broker successfully');
-            document.getElementById('status').innerText = 'Connected';
-            client.subscribe(statusTopic); // Subscribe to status updates
-        });
+    const controlTopic = 'esp32/control';
+    const statusTopic = 'esp32/status';
 
-        client.on('message', (topic, payload) => {
-            console.log(`Message received on ${topic}: ${payload.toString()}`);
-            if (topic === statusTopic && payload.toString() === 'ONLINE') {
-                document.getElementById('status').innerText = 'Device Online';
-            }
-        });
+    client.on('connect', () => {
+      console.log('✅ Connected to MQTT broker');
+      document.getElementById('status').innerText = 'Connected';
+      client.subscribe(statusTopic, (err) => {
+        if (err) console.error('Subscription error:', err);
+      });
+    });
 
-        client.on('error', (err) => {
-            console.error('Connection error: ', err);
-            document.getElementById('status').innerText = 'Error';
-        });
+    client.on('message', (topic, message) => {
+      const msg = message.toString();
+      console.log(`📩 Received on ${topic}: ${msg}`);
+      if (topic === statusTopic && msg === 'ONLINE') {
+        document.getElementById('status').innerText = 'Device Online';
+      }
+    });
 
-        client.on('offline', () => {
-            console.log('Disconnected from MQTT broker');
-            document.getElementById('status').innerText = 'Disconnected';
-        });
+    client.on('error', (err) => {
+      console.error('❌ Connection error:', err);
+      document.getElementById('status').innerText = 'Connection Error';
+    });
 
-        client.on('reconnect', () => {
-            console.log('Attempting to reconnect...');
-        });
+    client.on('offline', () => {
+      console.warn('⚠️ Offline');
+      document.getElementById('status').innerText = 'Disconnected';
+    });
 
-        function sendCommand(command) {
-            if (client.connected) {
-                client.publish(controlTopic, command);
-                console.log(`Sent: ${command}`);
-                document.getElementById('status').innerText = 'Command Sent';
-                setTimeout(() => {
-                    document.getElementById('status').innerText = 'Device Online';
-                }, 1000); // Reset status after 1 second
-            } else {
-                alert('Not connected to the broker!');
-            }
-        }
-    </script>
+    client.on('reconnect', () => {
+      console.log('🔄 Reconnecting...');
+    });
+
+    function sendCommand(command) {
+      if (client.connected) {
+        client.publish(controlTopic, command);
+        console.log(`🚀 Sent command: ${command}`);
+        document.getElementById('status').innerText = 'Command Sent';
+        setTimeout(() => {
+          document.getElementById('status').innerText = 'Device Online';
+        }, 1000);
+      } else {
+        alert('MQTT not connected!');
+      }
+    }
+  </script>
 </body>
 </html>
