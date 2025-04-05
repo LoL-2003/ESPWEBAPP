@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Control</title>
+    <title>ESP32 Control Panel</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body {
@@ -23,16 +27,23 @@
     <h1>ESP32 Control Panel</h1>
     <button onclick="sendCommand('ON')">Turn ON</button>
     <button onclick="sendCommand('OFF')">Turn OFF</button>
-    <p>Status: <span id="status">Disconnected</span></p>
+    <p>Status: <span id="status">Connecting...</span></p>
 
     <script>
-        // MQTT Client Setup
-        const client = mqtt.connect('ws://test.mosquitto.org:8080/mqtt'); // WebSocket connection
-        const topic = 'esp32/control';
+        const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+        const controlTopic = 'esp32/control';
+        const statusTopic = 'esp32/status';
 
         client.on('connect', () => {
-            document.getElementById('status').innerText = 'Connected';
             console.log('Connected to MQTT broker');
+            document.getElementById('status').innerText = 'Connected';
+            client.subscribe(statusTopic); // Subscribe to status updates
+        });
+
+        client.on('message', (topic, payload) => {
+            if (topic === statusTopic && payload.toString() === 'ONLINE') {
+                document.getElementById('status').innerText = 'Device Online';
+            }
         });
 
         client.on('error', (err) => {
@@ -40,11 +51,19 @@
             document.getElementById('status').innerText = 'Error';
         });
 
-        // Function to send commands
+        client.on('offline', () => {
+            document.getElementById('status').innerText = 'Disconnected';
+            console.log('Disconnected from MQTT broker');
+        });
+
         function sendCommand(command) {
             if (client.connected) {
-                client.publish(topic, command);
+                client.publish(controlTopic, command);
                 console.log(`Sent: ${command}`);
+                document.getElementById('status').innerText = 'Command Sent';
+                setTimeout(() => {
+                    document.getElementById('status').innerText = 'Device Online';
+                }, 1000); // Reset status after 1 second
             } else {
                 alert('Not connected to the broker!');
             }
