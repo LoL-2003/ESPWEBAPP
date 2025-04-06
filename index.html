@@ -175,7 +175,7 @@
 </html>
  -->
 
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -297,6 +297,150 @@
 
     client.on("error", function (err) {
       console.error("MQTT error:", err);
+    });
+
+    client.on("reconnect", function () {
+      document.getElementById("status").innerText = "Reconnecting...";
+    });
+
+    client.on("offline", function () {
+      document.getElementById("status").innerText = "Device Offline";
+    });
+  </script>
+
+</body>
+</html>
+ -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ESP32 Control Panel</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      background-color: #111;
+      color: #0ff;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      text-shadow: 0 0 10px #0ff;
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #00ffcc;
+      color: #000;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #0ff;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .data-box {
+      background-color: #222;
+      padding: 20px;
+      border-radius: 15px;
+      margin-top: 30px;
+      display: inline-block;
+      box-shadow: 0 0 15px #0ff;
+    }
+
+    .data-box p {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+
+    .label {
+      color: #fff;
+    }
+
+    .value {
+      color: #0ff;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ESP32 Control Panel</h1>
+
+  <button onclick="sendCommand('ON')">Turn ON</button>
+  <button onclick="sendCommand('OFF')">Turn OFF</button>
+
+  <p>Status: <span id="status" class="value">Connecting...</span></p>
+
+  <div class="data-box">
+    <h2>Live Sensor Data</h2>
+    <p><span class="label">X:</span> <span id="x-value" class="value">-</span></p>
+    <p><span class="label">Y:</span> <span id="y-value" class="value">-</span></p>
+    <p><span class="label">Speed:</span> <span id="speed-value" class="value">-</span></p>
+    <p><span class="label">Distance:</span> <span id="distance-value" class="value">-</span></p>
+  </div>
+
+  <script>
+    const options = {
+      username: "xaygsnkk",
+      password: "mOLBh4PE5GW_Vd7I4TMQ-eMc02SvIrbS"
+    };
+
+    const client = mqtt.connect("wss://chameleon.lmq.cloudamqp.com/ws", options);
+
+    client.on("connect", function () {
+      console.log("✅ MQTT Connected");
+      document.getElementById("status").innerText = "Device Online";
+
+      client.subscribe("esp32/target", function (err) {
+        if (err) {
+          console.error("❌ Subscribe error:", err);
+        }
+      });
+
+      client.subscribe("esp32/status");
+    });
+
+    client.on("message", function (topic, message) {
+      if (topic === "esp32/target") {
+        try {
+          const data = JSON.parse(message.toString());
+          document.getElementById("x-value").innerText = data.x?.toFixed(2) ?? "-";
+          document.getElementById("y-value").innerText = data.y?.toFixed(2) ?? "-";
+          document.getElementById("speed-value").innerText = data.speed?.toFixed(2) ?? "-";
+          document.getElementById("distance-value").innerText = data.distance?.toFixed(2) ?? "-";
+        } catch (err) {
+          console.error("JSON Parse Error:", err);
+        }
+      } else if (topic === "esp32/status") {
+        document.getElementById("status").innerText = message.toString();
+      }
+    });
+
+    function sendCommand(cmd) {
+      if (client.connected) {
+        client.publish("esp32/control", cmd);
+        console.log("Sent command:", cmd);
+      } else {
+        alert("MQTT not connected!");
+      }
+    }
+
+    client.on("error", function (err) {
+      console.error("MQTT error:", err);
+      document.getElementById("status").innerText = "Connection Error";
     });
 
     client.on("reconnect", function () {
