@@ -255,11 +255,7 @@
   </div>
 
   <script>
-    const client = mqtt.connect("chameleon.lmq.cloudamqp.com", {
-      username: "xaygsnkk",
-      password: "mOLBh4PE5GW_Vd7I4TMQ-eMc02SvIrbS",
-      protocol: "wss"
-    });
+    const client = mqtt.connect("wss://xaygsnkk:mOLBh4PE5GW_Vd7I4TMQ-eMc02SvIrbS@chameleon.lmq.cloudamqp.com/ws");
 
     client.on("connect", function () {
       console.log("✅ MQTT Connected");
